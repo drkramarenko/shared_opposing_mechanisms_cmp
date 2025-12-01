@@ -796,5 +796,5 @@ Inputs (harmonized GWAS summary statistics used throughout the project):
 - sum_stats/harmonized_dcm.tsv.gz
 - sum_stats/harmonized_hcm.tsv.gz
 
-Example implementation (save as code/shared_effect_meta_analysis_DCM_HCM.r)
+Example implementation ([`code/shared_effect_meta_analysis_DCM_HCM.r`](code/shared_effect_meta_analysis_DCM_HCM.r))
 
