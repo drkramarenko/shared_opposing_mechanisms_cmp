@@ -11,21 +11,22 @@ This repository documents the analysis pipeline and scripts used in the manuscri
 "Leveraging the shared and opposing genetic mechanisms in the heritable cardiomyopathies".
 
 All figures are generated using R (v4.3.1) and the tidyverse / Bioconductor ecosystem.  
-Detailed documentation for specific figure inputs can be found in: [`README_figures.md.sh`](code/example_munging.sh) 
+Detailed documentation for specific figure inputs can be found in: [`README_figures.md.sh`](README_figures.md.sh) 
 
 ## Table of Contents
 
 - [Step 1 – Obtain DCM and HCM GWAS summary statistics](#step-1--obtain-dcm-and-hcm-gwas-summary-statistics)
 - [Step 2 – Summary of QC for processed summary statistics (DCM/HCM)](#step-2--summary-of-qc-for-processed-summary-statistics-dcmhcm)
 - [Step 3 – Genetic correlations](#step-3--genetic-correlations)
-  - [3.1 Global genetic correlation (LDSC)](#31-global-genetic-correlation-ldsc)
+  - [3.1 Global genetic correlation (LDSC)](#31-global-genetic-correlation-rg)
   - [3.2 Local genetic correlation (LAVA)](#32-local-genetic-correlation-lava)
 - [Step 4 – Case–case analyses (CC-GWAS & CC-MTAG)](#step-4--casecase-analyses-cc-gwas--cc-mtag)
   - [4.1 Inputs](#41-inputs)
+  - [4.2 Run CC-GWAS](#42-CC-GWAS)
   - [4.3 MTAG installation (Python 2.7)](#43-mtag-installation-python-27)
   - [4.4 CC-MTAG analysis](#44-cc-mtag-analysis)
-    - [Round 1 – Multivariate architecture scan](#round-1--multivariate-architecture-scan)
-    - [Round 2 – Focused CC-MTAG with FDR](#round-2--focused-cc-mtag-with-fdr)
+    - [Round 1 – Multivariate architecture scan across all MRI traits](#round-1--multivariate-architecture-scan-across-all-MRI-traits)
+    - [Round 2 – Focused CC–MTAG with FDR (Ecc, LVESVi, LVconc)](#round-2--focused-cc-mtag-with-fdr-Ecc-LVESVi-LVconc)
 - [Step 5 – Locus definitions, variant annotation and gene prioritization](#step-5--locus-definitions-variant-annotation-and-gene-prioritization)
   - [5.1 Gene prioritization](#51-gene-prioritization)
   - [5.2 Consolidation across studies](#52-consolidation-across-studies)
@@ -80,7 +81,7 @@ Output:
 - harmonized_dcm.tsv.gz
 - harmonized_hcm.tsv.gz
 ---
-## Step 3 - Genetic correlations
+## Step 3 — Genetic correlations
 
 ### 3.1 Global genetic correlation (rg)
 
@@ -140,10 +141,7 @@ LAVA requires a simple tab-delimited configuration file specifying, for each phe
 #### 3.2.4 Figures 2d and 2f (LAVA locus annotation and Manhattan-type plots)
 Iput: ST5 LAVA univariate & bivariate local rg across DCM/HCM loci
 Output: Figure 2d, Figure 2f
-
-
-
-## Step 4 - Levereging opposing genetics: case-case studies (CC_GWAS/CC-MTAG)
+## Step 4 – Case–case analyses (CC-GWAS & CC-MTAG)
 
 
 ### 4.1 Inputs
@@ -154,7 +152,7 @@ This analysis requires harmonised DCM and HCM GWAS summary statistics as produce
 
 Cardiac MRI traits for MTAG come from the cardiac MRI GWAS ([`Tadros et al.`](https://www.nature.com/articles/s41588-024-01975-5)). 
 
-#### 4.2 Run CC-GWAS
+### 4.2 Run CC-GWAS
 
 CC-GWAS contrasts the genetic architectures of DCM and HCM directly, modelling them as two case-control traits. This identifies variants with differential genetic effects.
 
@@ -192,11 +190,11 @@ All CC–MTAG analyses below are run inside this `env_python2.7` environment.
 
 ---
 
-### 4.4 CC–MTAG analysis (Python 2.7)
+### 4.4 4.4 CC-MTAG analysis
 
 We used MTAG to model **CC-GWAS (DCM vs HCM)** jointly with cardiac MRI traits from Tadros et al., in two stages:
 
-1. **Round 1 – Multivariate architecture scan**  
+1. **Round 1 — Multivariate architecture scan**  
    Run MTAG across CC-GWAS and a broad set of MRI traits to identify traits with the highest genetic correlation (most informative multivariate partners).
 
 2. **Round 2 – Focused CC–MTAG with FDR**  
@@ -281,7 +279,7 @@ mtag/mtag.py \
   --fdr \
   --stream_stdout
 ```
-## Step 5 - Locus definitions, variant annotation and gene prioritization
+## Step 5 – Locus definitions, variant annotation and gene prioritization
 
 ### 5.1 Gene prioritization
 
@@ -434,7 +432,7 @@ python ${WD_PROJECT}/FLAMES/FLAMES.py FLAMES \
 ```
 ---
 
-### 5.2 Locus definition and consolidation across studies
+### 5.2 Consolidation across studies
 
 To ensure consistent genomic locus boundaries across all analyses, loci were defined using a unified procedure applied to each GWAS and MTAG dataset.
 
@@ -503,11 +501,9 @@ Scores are summed **per gene per locus** across all datasets.
    - selected lead gene(s)
 
 This framework provides a **standardized, reproducible, and transparent** method for consolidating gene-level evidence across DCM, HCM, and case–case analyses.
-
-## Step 6 - Cell type analyses using snRNAseq data
+## Step 6 – Cell type analyses using snRNAseq data
 Using the cell type-specific gene expression profiles, we then performed heritability enrichment analyses using the sc-linker pipeline (https://github.com/kkdey/GSSG) and preprocessed snRNA-seq data obtained from Reichart et al., 2022.
-
-## Step 7 - Pathway / Tissue Enrichment 
+## Step 7 – Pathway / Tissue Enrichment 
 
 We performed enrichment analysis on prioritized genes using **g:Profiler** and summarized results in a volcano-style plot, integrating:
 
@@ -542,9 +538,7 @@ This script:
 2. Uses REVIGO tables to map each term to a **representative group ID / name**.
 3. Selects **top terms per source** for annotation.
 4. Produces a **volcano-style plot** (Figure 4d,f) (OR vs –log10(adjusted p)) with labels.
-
-
-## Step 8 - Partitioned heritability
+## Step 8 – Partitioned heritability
 
 We quantified how much SNP heritability of DCM and HCM is concentrated in loci identified by the CC-GWAS and CC–MTAG analyses, using partitioned heritability in LDSC.  
 LDSC installation and munging follow Sections **3.1.1** and **3.1.2**.  
@@ -559,7 +553,6 @@ For each case–case dataset (CC_GWAS and CC_MTAG) we:
 - Combine CC_GWAS and CC_MTAG windows into a shared locus annotation.
 
 Results in ST9 Partitioned heritability of CC loci
----
 
 ### 8.1 Environment and paths
 
@@ -588,7 +581,7 @@ loci_GWAS="CC_GWAS"
 loci_MTAG="CC_MTAG"
 ```
 
-### 8.2 Define ±250 kb loci around genome-wide significant SNPs
+### 8.2 Define ±250 kb loci
 
 ```bash
 cd "${PROJECT_DIR}"
@@ -641,7 +634,7 @@ cat gws_loci_cc_gwas.bed gws_loci_cc_mtag.bed \
 
 ```
 
-### 8.3 Create LDSC annotation files (.annot.gz)
+### 8.3 Create LDSC annotation files
 We next convert the BED files into LDSC binary annotation matrices, one file per chromosome.
 
 ```bash
@@ -674,7 +667,7 @@ for chr in {1..22}; do
 done
 ```
 
-### 8.4 Step 3 – Compute LD scores for custom annotations
+### 8.4 Step 3 – Compute LD scores
 We compute LD scores for:
 - Combined CC locus annotation (for models that use “any CC locus”)
 - Per-dataset annotations (CC_GWAS, CC_MTAG) if needed.
@@ -745,8 +738,7 @@ python "${LDSC_DIR}/ldsc.py" \
   --print-delete-vals \
   --out "${PROJECT_DIR}/results/part_out_cc_gwas/cc_loci_HCM_sign_baselineLD"
 ```
-
-## Step 9 - Druggability Annotation of Prioritized Genes
+## Step 9 – Druggability Annotation of Prioritized Genes
 
 To evaluate the translational potential of the prioritized effector genes, we performed a comprehensive druggability assessment by integrating two complementary resources:
 
@@ -758,9 +750,9 @@ To evaluate the translational potential of the prioritized effector genes, we pe
 In total, **146 prioritized genes** across **113 loci** (from DCM GWAS, HCM GWAS, CC-GWAS/MTAG, and the shared-effects meta-analysis) were analyzed (ST13 Druggability of all prioritized genes, Extended Data Fig. 9a,b).
 
 Cell-type Expression of Druggable Prioritized Genes: Extended Data Fig. 8, Supplementary Fig. 10a–b  [`cell_type_specific_expr_fig.r`](cell_type_specific_expr_fig.r)
----
 
-## Step 10 - Polygenic scores DCM / HCM / CC
+---
+## Step 10 – Polygenic scores DCM / HCM / CC
 
 We then aimed to construct polygenic scores (PGS) from our cardiomyopathy GWAS data. To this end, we used the recently described SBayesRC algorithm (https://github.com/zhilizheng/SBayesRC). SBayesRC improves polygenic prediction by leveraging functional annotations and by substantially increasing the genomic coverage as compared to many other methods. When running SBayesRC, we used functional annotation data for 8,140,664 SNPs from the Baseline-LD v2.2 model, which includes variant-level information such as enhancer or promoter region status, with corresponding annotation-based weights. The LD reference we used was constructed from imputed SNPs in 347,800 individuals of European ancestry from the UK Biobank.
 
@@ -769,9 +761,9 @@ All PGS were run similarly to this (https://github.com/poeyahay/AFib_PGS/blob/ma
 Forrest plot: [`forest_plot.r`](forest_plot.r)
 
 Output: Figures 5a,b; ST14 PGS performance metrics across DCM, HCM & CC MTAG; ST16 PGS replication analyses
----
 
-## Step 11 - Shared-effect meta analysis
+---
+## Step 11 – Shared-effect meta analysis
 
 We performed a shared-effects GWAS meta-analysis across DCM and HCM, assuming that both cardiomyopathies partly reflect similar genetic architecture.
 
