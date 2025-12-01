@@ -11,10 +11,37 @@ This repository documents the analysis pipeline and scripts used in the manuscri
 "Leveraging the shared and opposing genetic mechanisms in the heritable cardiomyopathies".
 
 All figures are generated using R (v4.3.1) and the tidyverse / Bioconductor ecosystem.  
-A reproducible description of the R environment is provided in the **Code Availability** section.
-
 Detailed documentation for specific figure inputs can be found in: [`README_figures.md.sh`](code/example_munging.sh) 
 
+## Table of Contents
+
+- [Step 1 – Obtain DCM and HCM GWAS summary statistics](#step-1--obtain-dcm-and-hcm-gwas-summary-statistics)
+- [Step 2 – Summary of QC for processed summary statistics (DCM/HCM)](#step-2--summary-of-qc-for-processed-summary-statistics-dcmhcm)
+- [Step 3 – Genetic correlations](#step-3--genetic-correlations)
+  - [3.1 Global genetic correlation (LDSC)](#31-global-genetic-correlation-ldsc)
+  - [3.2 Local genetic correlation (LAVA)](#32-local-genetic-correlation-lava)
+- [Step 4 – Case–case analyses (CC-GWAS & CC-MTAG)](#step-4--casecase-analyses-cc-gwas--cc-mtag)
+  - [4.1 Inputs](#41-inputs)
+  - [4.3 MTAG installation (Python 2.7)](#43-mtag-installation-python-27)
+  - [4.4 CC-MTAG analysis](#44-cc-mtag-analysis)
+    - [Round 1 – Multivariate architecture scan](#round-1--multivariate-architecture-scan)
+    - [Round 2 – Focused CC-MTAG with FDR](#round-2--focused-cc-mtag-with-fdr)
+- [Step 5 – Locus definitions, variant annotation and gene prioritization](#step-5--locus-definitions-variant-annotation-and-gene-prioritization)
+  - [5.1 Gene prioritization](#51-gene-prioritization)
+  - [5.2 Consolidation across studies](#52-consolidation-across-studies)
+- [Step 6 – Cell type analyses using snRNAseq](#step-6--cell-type-analyses-using-snrnaseq)
+- [Step 7 – Pathway / Tissue Enrichment](#step-7--pathway--tissue-enrichment)
+- [Step 8 – Partitioned heritability](#step-8--partitioned-heritability)
+  - [8.1 Environment and paths](#81-environment-and-paths)
+  - [8.2 Define ±250kb loci](#82-define-250kb-loci)
+  - [8.3 Create LDSC annotation files](#83-create-ldsc-annotation-files)
+  - [8.4 Compute LD scores](#84-compute-ld-scores)
+  - [8.5 Partitioned heritability results](#85-partitioned-heritability-results)
+- [Step 9 – Druggability annotation of prioritized genes](#step-9--druggability-annotation-of-prioritized-genes)
+- [Step 10 – Polygenic scores (DCM/HCM/CC)](#step-10--polygenic-scores-dcmhcmcc)
+- [Step 11 – Shared-effect meta-analysis](#step-11--shared-effect-meta-analysis)
+  - [Stage 1 – Fixed-effects meta-analysis](#stage-1--fixed-effects-meta-analysis)
+  - [Stage 2 – Random-effects meta-analysis](#stage-2--random-effects-meta-analysis)
 ## Directory layout (high level)
 
 - `code/` – all analysis scripts (R, Bash, etc.)
@@ -265,7 +292,7 @@ https://github.com/Marijn-Schipper/FLAMES
 
 ---
 
-### Workflow Overview
+#### Workflow Overview
 
 Gene prioritization was performed in four integrated stages:
 
@@ -733,7 +760,7 @@ In total, **146 prioritized genes** across **113 loci** (from DCM GWAS, HCM GWAS
 Cell-type Expression of Druggable Prioritized Genes: Extended Data Fig. 8, Supplementary Fig. 10a–b  [`cell_type_specific_expr_fig.r`](cell_type_specific_expr_fig.r)
 ---
 
-## Step 8 - Polygenic scores DCM / HCM / CC
+## Step 10 - Polygenic scores DCM / HCM / CC
 
 We then aimed to construct polygenic scores (PGS) from our cardiomyopathy GWAS data. To this end, we used the recently described SBayesRC algorithm (https://github.com/zhilizheng/SBayesRC). SBayesRC improves polygenic prediction by leveraging functional annotations and by substantially increasing the genomic coverage as compared to many other methods. When running SBayesRC, we used functional annotation data for 8,140,664 SNPs from the Baseline-LD v2.2 model, which includes variant-level information such as enhancer or promoter region status, with corresponding annotation-based weights. The LD reference we used was constructed from imputed SNPs in 347,800 individuals of European ancestry from the UK Biobank.
 
@@ -744,7 +771,7 @@ Forrest plot: [`forest_plot.r`](forest_plot.r)
 Output: Figures 5a,b; ST14 PGS performance metrics across DCM, HCM & CC MTAG; ST16 PGS replication analyses
 ---
 
-## Step 9 - Shared-effect meta analysis
+## Step 11 - Shared-effect meta analysis
 
 We performed a shared-effects GWAS meta-analysis across DCM and HCM, assuming that both cardiomyopathies partly reflect similar genetic architecture.
 
