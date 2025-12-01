@@ -52,17 +52,6 @@ QC filters:
 Output: 
 - harmonized_dcm.tsv.gz
 - harmonized_hcm.tsv.gz
-<!-- #### ===== packages and versions 
-# conda activate LAVA_2024
-# conda list
-# conda env export > environment_LAVA_2024.yml
-# R --version -->
-<!-- Rscript -e "packageVersion('optparse')"
-Rscript -e "packageVersion('data.table')"
-Rscript -e "packageVersion('dplyr')"
-Rscript -e "packageVersion('readr')"
-Rscript -e "packageVersion('tidyr')" -->
-
 ---
 ## Step 3 - Genetic correlations
 
@@ -100,6 +89,9 @@ LAVA was executed in a dedicated conda environment (`LAVA_2024`) to ensure consi
 Version used for our paper: https://github.com/josefin-werme/LAVA/releases/tag/v0.1.0 
 
 #### 3.2.1 Activate environment
+
+Environemts for LAVA: [`env/environment_LAVA_2024.yml`](env/environment_LAVA_2024.yml)
+
 ```bash
 conda activate LAVA_2024
 # R version (used for LAVA)
@@ -754,14 +746,55 @@ Output: Figures 5a,b; ST14 PGS performance metrics across DCM, HCM & CC MTAG; ST
 
 ## Step 9 - Shared-effect meta analysis
 
-2.5 Shared-effects meta-analysis of DCM and HCM
+We performed a shared-effects GWAS meta-analysis across DCM and HCM, assuming that both cardiomyopathies partly reflect similar genetic architecture.
 
-This step performs a shared-effects meta-analysis of DCM and HCM GWAS, under the assumption that the two traits share the same genetic effect (genetic correlation constrained to 1), while accounting for sample overlap. It uses MTAG with --equal_h2 and --perfect_gencov and then refines effect estimates with a secondary random-effects meta-analysis for loci with strong evidence.
+### **Stage 1 – Fixed-effects meta-analysis**
 
-2.5.1 Inputs
+We first computed fixed-effects inverse-variance-weighted meta-analysis statistics using the MTAG software, constraining the cross-trait genetic correlation to 1 (`--equal_h2 --perfect_gencov`). This corresponds to a standard fixed-effects meta-analysis while accounting for sample overlap.
 
-Two GWAS summary statistic files, used for this analysis:
-    - `harmonized_dcm.tsv.gz`
-    - `harmonized_hcm.tsv.gz`
+- Inputs (MTAG-formatted summary statistics):
+    - `harmonized_dcm.txt`
+    - `harmonized_hcm.txt`
 
+- Same environment as in **4.4.3**
+
+```bash
+conda activate env_python2.7
+
+PROJECT_DIR=/path/to/project
+MTAG_DIR=/path/to/mtag
+
+python ${MTAG_DIR}/mtag.py \
+    --sumstats \
+    ${PROJECT_DIR}/sum_stats/harmonized_dcm.txt,\
+    ${PROJECT_DIR}/sum_stats/harmonized_hcm.txt \
+    --out ${PROJECT_DIR}/results/shared_effect_meta_analysis_DCM_HCM \
+    --beta_name beta \
+    --snp_name snpid \
+    --se_name se \
+    --z_name z \
+    --n_name n \
+    --eaf_name freq \
+    --a1_name a1 \
+    --a2_name a2 \
+    --p_name pval \
+    --stream_stdout \
+    --equal_h2 \
+    --perfect_gencov
+```
+
+This produces (among others):
+
+- results/shared_effect_meta_analysis_DCM_HCM_mtag_meta.txt
+(fixed-effects MTAG meta-analysis across DCM and HCM)
+
+### **Stage 2 – Harmonization, precision filtering, and random-effects meta-analysis**
+
+We then harmonized the MTAG output with the original GWAS summary statistics, removed variants with extreme differences in standard error (precision) between DCM and HCM, and performed a second-stage random-effects meta-analysis for variants with suggestive evidence (P < 1 × 10⁻⁴), using the meta R package.
+
+Inputs (harmonized GWAS summary statistics used throughout the project):
+- sum_stats/harmonized_dcm.tsv.gz
+- sum_stats/harmonized_hcm.tsv.gz
+
+Example implementation (save as code/shared_effect_meta_analysis_DCM_HCM.r)
 
