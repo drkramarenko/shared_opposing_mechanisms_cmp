@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 10_setup_mtag_ccgwas.sh
+# setup_mtag_ccgwas.sh
 #
 # Install MTAG (Python 2.7) and the CC-GWAS R package.
 # This script is meant as REPRODUCIBLE DOCUMENTATION of the steps;
@@ -10,7 +10,7 @@
 # Conda env name:             mtag_py27
 #
 # Usage:
-#   bash code/environment/10_setup_mtag_ccgwas.sh
+#   bash code/setup_mtag_ccgwas.sh
 #
 # NOTE: Python 2.7 is end-of-life; this environment is isolated and
 #       used only for MTAG.
