@@ -22,7 +22,7 @@ Detailed documentation for specific figure inputs can be found in: [`README_figu
   - [3.2 Local genetic correlation (LAVA)](#32-local-genetic-correlation-lava)
 - [Step 4 – Case–case analyses (CC-GWAS & CC-MTAG)](#step-4--casecase-analyses-cc-gwas--cc-mtag)
   - [4.1 Inputs](#41-inputs)
-  - [4.2 Run CC-GWAS](#42-CC-GWAS)
+  - [4.2 Run CC-GWAS](#42-Run-CC-GWAS)
   - [4.3 MTAG installation (Python 2.7)](#43-mtag-installation-python-27)
   - [4.4 CC-MTAG analysis](#44-cc-mtag-analysis)
     - [Round 1 – Multivariate architecture scan across all MRI traits](#round-1--multivariate-architecture-scan-across-all-MRI-traits)
@@ -170,7 +170,7 @@ Inputs for CC-GWAS:
 CC-GWAS software (R package) is available at https://github.com/wouterpeyrot/CCGWAS 
 The CC-GWAS method is described in detail in [`Peyrot & Price. 2021 Nature Genetics`](https://www.nature.com/articles/s41588-021-00787-1)
 
-Code for the DCM and HCM CC GWAS: [`run_ccgwas.r`](run_ccgwas.r) (MYBPC3 region (chr11:30–80 Mb) removed)
+Code for the DCM and HCM CC GWAS: [`run_ccgwas.r`](code/run_ccgwas.r) (MYBPC3 region (chr11:30–80 Mb) removed)
 
 ### 4.3 MTAG installation (Python 2.7)
 
