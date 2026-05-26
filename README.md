@@ -33,7 +33,7 @@ Detailed documentation for specific figure inputs can be found in: [`README_figu
     - [5.2.1 Locus definition](#521-locus-definition)
     - [5.2.2 Gene prioritization per study](#522-gene-prioritization-per-study)
     - [5.2.3 Gene prioritization across studies](#523-gene-prioritization-across-studies)
-- [Step 6 – Cell type analyses using snRNAseq](#step-6--cell-type-analyses-using-snrnaseq)
+- [Step 6 – Cell type analyses using snRNAseq](#step-6--cell-type-analyses-using-snrnaseq-data) 
 - [Step 7 – Pathway / Tissue Enrichment](#step-7--pathway--tissue-enrichment)
 - [Step 8 – Partitioned heritability](#step-8--partitioned-heritability)
   - [8.1 Environment and paths](#81-environment-and-paths)
@@ -85,6 +85,8 @@ Output:
 - harmonized_hcm.tsv.gz
 ---
 ## Step 3 — Genetic correlations
+
+![Overview of genetic correlation analyses between DCM and HCM](figures/Sup_methodsgen_cor@9x.png)
 
 ### 3.1 Global genetic correlation (rg)
 
@@ -498,6 +500,8 @@ To ensure interpretability, the five cross-study confidence levels were made mut
 
 ## Step 6 – Cell type analyses using snRNAseq data
 Using the cell type-specific gene expression profiles, we then performed heritability enrichment analyses using the sc-linker pipeline (https://github.com/kkdey/GSSG) and preprocessed snRNA-seq data obtained from Reichart et al., 2022.
+
+![Analytical framework leveraging opposing genetic effects between DCM and HCM](figures/Sup_methodsFLAMES@9x.png)
 ## Step 7 – Pathway / Tissue Enrichment 
 
 We performed enrichment analysis on prioritized genes using **g:Profiler** and summarized results in a volcano-style plot, integrating:
