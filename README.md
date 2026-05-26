@@ -30,6 +30,9 @@ Detailed documentation for specific figure inputs can be found in: [`README_figu
 - [Step 5 – Locus definitions, variant annotation and gene prioritization](#step-5--locus-definitions-variant-annotation-and-gene-prioritization)
   - [5.1 Gene prioritization](#51-gene-prioritization)
   - [5.2 Consolidation across studies](#52-consolidation-across-studies)
+    - [5.2.1 Locus definition](#521-locus-definition)
+    - [5.2.2 Gene prioritization per study](#522-gene-prioritization-per-study)
+    - [5.2.3 Gene prioritization across studies](#523-gene-prioritization-across-studies)
 - [Step 6 – Cell type analyses using snRNAseq](#step-6--cell-type-analyses-using-snrnaseq)
 - [Step 7 – Pathway / Tissue Enrichment](#step-7--pathway--tissue-enrichment)
 - [Step 8 – Partitioned heritability](#step-8--partitioned-heritability)
@@ -394,7 +397,7 @@ ST35 SuSiE LD intervals for CC MTAG
 To perform gene prioritization, we used the recently-described ‘fine-mapped locus assessment model of effector genes’ (FLAMES) approach (v1.1.1). FLAMES combines two main approaches to gene prioritization in a weighted framework to compute causal gene predictions that outperform prior methods. In particular, FLAMES first uses pre-fit machine learning models (based on XG-Boost) to link fine-mapped variants to likely effector genes based on various parameters including variant-to-gene distance, epigenomic context, and quantitative trait loci. Second, FLAMES uses the Polygenic Priority Score (PoPS) method to learn gene features associated with the trait based on functional networks; features consist of cell-type-specific gene expression, biological pathways and protein–protein interactions (PPIs). 
 We then applied the FLAMES framework to each of our GWAS datasets. To this end, for a given GWAS dataset, we first ran PoPS (v0.2), using the MAGMA Z-scores as input and using the full feature matrix provided by the PoPS developers. We then annotated each credible set using the annotate module from FLAMES, which combines variant-to-gene mappings, MAGMA Z-scores, PoPS scores, and GTEx tissue enrichment data.
 
-FLAMES then returned a ranked list of genes per locus in FLAMES_scores.preds, including raw and scaled FLAMES scores, XG-Boost scores, PoPS scores, and estimated precision.
+FLAMES then returned a ranked list of genes per locus, including raw and scaled FLAMES scores, XG-Boost scores, PoPS scores, and estimated cumulative precision. This metric reflects the expected accuracy of gene prioritization at a given threshold. An estimated cumulative precision of 0.8 would indicate that prioritizing genes at or above the threshold of that locus, the set on average would be 80% precise.
 
 ```bash
 conda activate FLAMES
@@ -436,7 +439,9 @@ python ${WD_PROJECT}/FLAMES/FLAMES.py FLAMES \
 
 To ensure consistent genomic locus boundaries across all analyses, loci were defined using a unified procedure applied to each GWAS and MTAG dataset.
 
-#### 5.2.1 Procedure
+![Cross-study locus definition using FLAMES](figures/Sup_methodspriorit@9x.png)
+
+#### 5.2.1 Locus definition
 
 1. **Select index variants**
    - Highest PIP SNP from SuSiE fine-mapping, **or**
@@ -446,7 +451,7 @@ To ensure consistent genomic locus boundaries across all analyses, loci were def
 
 3. **Merge nearby index variants**
    - Variants located within **±500 kb** of each other were merged into a single locus  
-     (i.e., a **1 Mb window**).
+     (**1 Mb window**).
 
 4. **Assign a unique locus ID**
    - Locus IDs were kept consistent across all datasets.
@@ -465,42 +470,32 @@ This strategy ensures that all analyses reference the same set of genomic loci.
 
 ---
 
-#### 5.2.2 Cross-Study Gene Prioritization Framework
+#### 5.2.2 Gene prioritization per study
 
-Because FLAMES may prioritize different genes in different datasets for the same locus, we implemented a simple, transparent scoring system to integrate evidence across studies.
+At the study level, loci with cumulative precision >0.8 (FLAMES_causal = 1) were classified as high confidence, relying on FLAMES-only prioritization. Loci with cumulative precision <0.8 (FLAMES_causal = 0) were classified as low confidence; for these, gene prioritization incorporated additional methods (XGB and PoPS) when discordant with FLAMES, or defaulted to FLAMES-only when concordant.
 
-##### Scoring System
+![Framework for study-level and cross-study gene prioritization](figures/Sup_methodsCCGWAS_fun_enr@9x.png)
 
-| Source                      | Score |
-|-----------------------------|-------|
-| PoPS top-ranked gene        | 0.5   |
-| FLAMES top-ranked gene      | 0.5   |
+#### 5.2.3 Gene prioritization across studies
 
-Scores are summed **per gene per locus** across all datasets.
+After study-level prioritization, a second prioritization step was applied across studies at each locus. The aim of this step was to organize candidate genes according to the strength and consistency of evidence across analyses. Genes were assigned into five mutually exclusive confidence levels, ordered from strongest to weakest support.
 
-##### Example (Locus 12: chr1:212.1–212.3 Mb)
+**Level I: full concordance across high-confidence studies** 
+Genes were assigned to Level I if they were present in all studies with a high-confidence annotation, that is, in all studies in which the locus contained at least one variant with FLAMES_causal = 1. Only studies with high-confidence annotations contributed to this assessment. Studies without a FLAMES causal signal were ignored.
 
-- **DCM MTAG** → DTL (PoPS + FLAMES = **1.0**)  
-- **CC–MTAG** → BATF3 (PoPS = 0.5), DTL (FLAMES = 0.5)  
+**Level II partial concordance across high-confidence studies** 
+Genes were assigned to Level II if they were present in more than 50% of studies with a high-confidence annotation, but not in all. When only one study provided a high-confidence annotation for a given locus, the corresponding gene or genes were assigned to Level II rather than Level I to avoid overestimation of cross-study consistency from a single observation. Only studies with high-confidence annotations contributed to this assessment. Studies without a FLAMES causal signal were ignored.
 
-**Total scores:**
-- DTL = **1.5**  
-- BATF3 = **0.5**  
+**Level III: additional high-confidence genes** 
+Genes were assigned to Level III if they originated from high-confidence studies but were not already captured by Level I or Level II. Thus, this level reflects genes supported by at least one high-confidence study, but without sufficient concordance to meet the criteria for full or partial agreement across studies.
 
-→ **DTL selected as the lead gene**
+**Level IV: recurrent low-confidence genes across studies** 
+Genes were assigned to Level IV if they arose from low-confidence study-level prioritization and recurred in > 50% of studies. Specifically, low-confidence study-level prioritized genes were compared across all studies in which the locus was detected, and genes present in at least two studies were assigned to this level, after excluding any genes already assigned to higher-confidence levels.
 
-##### Decision Rules
+**Level V: remaining low-confidence genes** 
+Genes were assigned to Level V if they arose from low-confidence study-level prioritization but were not recurrent across studies and had not been assigned to Levels I–IV. These genes represent the weakest level of support in the framework.
+To ensure interpretability, the five cross-study confidence levels were made mutually exclusive. Genes assigned to a higher-confidence level were removed from all lower-confidence levels. Thus, each gene appeared only once per locus and was reported at the highest level of evidence it achieved.
 
-1. **Gene with the highest cumulative score = lead gene**
-2. If the difference between the top two genes is **< 1.0**,  
-   → **multiple genes are retained as co-lead candidates**
-3. Final locus summary includes:
-   - genomic coordinates  
-   - contributing datasets  
-   - gene scores  
-   - selected lead gene(s)
-
-This framework provides a **standardized, reproducible, and transparent** method for consolidating gene-level evidence across DCM, HCM, and case–case analyses.
 ## Step 6 – Cell type analyses using snRNAseq data
 Using the cell type-specific gene expression profiles, we then performed heritability enrichment analyses using the sc-linker pipeline (https://github.com/kkdey/GSSG) and preprocessed snRNA-seq data obtained from Reichart et al., 2022.
 ## Step 7 – Pathway / Tissue Enrichment 
@@ -517,16 +512,19 @@ We performed enrichment analysis on prioritized genes using **g:Profiler** and s
 ### 7.1 Inputs
 
 - **g:Profiler results**: 
-    - all DCM/HCM/CC genes [`data/gProfiler_hsapiens_06-02-2025_14-44-58__intersections.csv`](data/gProfiler_hsapiens_06-02-2025_14-44-58__intersections.csv)
-    ST8 Pathway enrichment of prioritized CC genes
+    - CC GWAS genes [`data/gprofiler_cc_novel/gProfiler_hsapiens_4-10-2026_12-00-38 PM__intersections`](data/gProfiler_hsapiens_06-02-2025_14-44-58__intersections.csv)
+    ST8 Pathway enrichment of prioritized CC GWAS genes
 
-    - unique CC genes: [`data/gProfiler_unique_hsapiens_06-02-2025_17-09-06__intersections.csv`](data/gProfiler_unique_hsapiens_06-02-2025_17-09-06__intersections.csv)
+    - novel CC genes: [`data/gprofiler_cc_novel/gProfiler_hsapiens_2026-05-26_09-26-55__intersections`](data/gProfiler_unique_hsapiens_06-02-2025_17-09-06__intersections.csv)
     ST10 Pathway enrichment of novel CC-prioritized genes
 
 - **REVIGO GO tables**:
-  - [`data/GO_revigo_BP/Revigo_BP_Table.tsv`](data/GO_revigo_BP/Revigo_BP_Table.tsv)
-  - [`data/GO_revigo_CC/Revigo_CC_Table.tsv`](data/GO_revigo_CC/Revigo_CC_Table.tsv)
-  - [`data/GO_revigo_MF/Revigo_MF_Table.tsv`](data/GO_revigo_MF/Revigo_MF_Table.tsv)
+  - [`data/gprofiler_cc_novel/Revigo_BP_Table.tsv`](data/gprofiler_cc_novel/Revigo_BP_Table.tsv)
+  - [`data/gprofiler_cc_gwas/Revigo_BP_Table.tsv`](data/gprofiler_cc_gwas/Revigo_BP_Table.tsv)
+  - [`data/gprofiler_cc_novel/Revigo_CC_Table.tsv`](data/gprofiler_cc_novel/Revigo_CC_Table.tsv)
+  - [`data/gprofiler_cc_gwas/Revigo_CC_Table.tsv`](data/gprofiler_cc_gwas/Revigo_CC_Table.tsv)
+  - [`data/gprofiler_cc_novel/Revigo_MF_Table.tsv`](data/gprofiler_cc_novel/Revigo_MF_Table.tsv)
+  - [`data/gprofiler_cc_gwas/Revigo_MF_Table.tsv`](data/gprofiler_cc_gwas/Revigo_MF_Table.tsv)
 
 ---
 
@@ -742,12 +740,12 @@ python "${LDSC_DIR}/ldsc.py" \
 
 To evaluate the translational potential of the prioritized effector genes, we performed a comprehensive druggability assessment by integrating two complementary resources:
 
-1. **Open Targets Platform (queried April 2025)** — therapeutic tractability categories  
+1. **Open Targets Platform (queried April 2026)** — therapeutic tractability categories. Accessed through https://api.platform.opentargets.org/api/v4/graphql/browser. [Query example](code/open_targets_query_march_2026.txt)
 2. **DrugnomeAI** — quantitative machine-learning predictions of druggability  
    - Raies et al., *Commun Biol* 5, 1291 (2022)  
    - https://astrazeneca-cgr-publications.github.io/DrugnomeAI/about.html
 
-In total, **146 prioritized genes** across **113 loci** (from DCM GWAS, HCM GWAS, CC-GWAS/MTAG, and the shared-effects meta-analysis) were analyzed (ST13 Druggability of all prioritized genes, Extended Data Fig. 9a,b).
+In total, **129 prioritized genes** across **113 loci** (from DCM GWAS, HCM GWAS, CC-GWAS/MTAG, and the shared-effects meta-analysis) were analyzed (ST13 Druggability of all prioritized genes, Extended Data Fig. 9a,b).
 
 Cell-type Expression of Druggable Prioritized Genes: Extended Data Fig. 8, Supplementary Fig. 10a–b  [`cell_type_specific_expr_fig.r`](cell_type_specific_expr_fig.r)
 
