@@ -25,8 +25,9 @@ Detailed documentation for specific figure inputs can be found in: [`README_figu
   - [4.2 Run CC-GWAS](#42-Run-CC-GWAS)
   - [4.3 MTAG installation (Python 2.7)](#43-mtag-installation-python-27)
   - [4.4 CC-MTAG analysis](#44-cc-mtag-analysis)
-    - [Round 1 – Multivariate architecture scan across all MRI traits](#round-1--multivariate-architecture-scan-across-all-MRI-traits)
-    - [Round 2 – Focused CC–MTAG with FDR (Ecc, LVESVi, LVconc)](#round-2--focused-cc-mtag-with-fdr-Ecc-LVESVi-LVconc)
+    - [4.4.2 Round 1 – Multivariate architecture scan across all MRI traits](#442-round-1--multivariate-architecture-scan-across-all-MRI-traits)
+    - [4.4.3 Round 2 – Focused CC-MTAG with FDR (Ecc, LVESVi, LVconc)](#443-round-2--focused-cc-mtag-with-fdr-Ecc-LVESVi-LVconc)
+  - [4.5 Back-computation of CC-GWAS effect sizes](#45-Back-computation-of-CC-GWAS-effect-sizes)
 - [Step 5 – Locus definitions, variant annotation and gene prioritization](#step-5--locus-definitions-variant-annotation-and-gene-prioritization)
   - [5.1 Gene prioritization](#51-gene-prioritization)
   - [5.2 Consolidation across studies](#52-consolidation-across-studies)
@@ -195,7 +196,7 @@ All CC–MTAG analyses below are run inside this `env_python2.7` environment.
 
 ---
 
-### 4.4 4.4 CC-MTAG analysis
+### 4.4 CC-MTAG analysis
 
 We used MTAG to model **CC-GWAS (DCM vs HCM)** jointly with cardiac MRI traits from Tadros et al., in two stages:
 
@@ -257,7 +258,7 @@ mtag/mtag.py \
   --stream_stdout
 ```
 
-#### 4.4.3 Round 2 – Focused CC–MTAG with FDR (Ecc, LVESVi, LVconc)
+#### 4.4.3 Round 2 – Focused CC-MTAG with FDR (Ecc, LVESVi, LVconc)
 
 Based on Round 1, we restrict CC–MTAG to CC-GWAS and three MRI traits (Ecc, LVESVi, LVconc) and compute FDR across traits.
 
@@ -284,6 +285,66 @@ mtag/mtag.py \
   --fdr \
   --stream_stdout
 ```
+
+### 4.5 Back-computation of CC-GWAS effect sizes
+
+CC-GWAS effect estimates are reported on a standardized observed scale and are therefore not directly comparable to conventional GWAS log-odds ratios ([`Peyrot & Price. 2021 Nature Genetics`](https://www.nature.com/articles/s41588-021-00787-1)). To enable comparison with the independent DCM-versus-HCM replication GWAS, we approximately transformed CC-GWAS effects onto a direct case–case logistic scale.
+
+First, for each variant, we inferred the effect-allele frequency among DCM and HCM cases from the corresponding case-control odds ratios and control allele frequencies. For disease A, the case allele frequency was estimated as:
+
+```
+p_A1 = (OR_A × p_A0) / (1 − p_A0 + OR_A × p_A0)
+```
+
+where `OR_A` is the case-control odds ratio for disease A, and `p_A0` is the effect-allele frequency in controls. The same calculation was applied to disease B:
+
+```
+p_B1 = (OR_B × p_B0) / (1 − p_B0 + OR_B × p_B0)
+```
+
+We then defined the pooled case–case allele frequency (assuming equal sampling of the two case groups) as:
+
+```
+p_CC = (p_A1 + p_B1) / 2
+```
+
+Next, we undid the CC-GWAS scaling. Let `beta_CC` denote the CC-GWAS effect estimate on the standardized observed 50/50 scale. The corresponding unscaled linear-regression coefficient was approximated as:
+
+```
+beta_unscaled = beta_CC / sqrt(2 × p_CC × (1 − p_CC))
+```
+
+Finally, we converted this unscaled coefficient to an approximate direct case–case odds ratio:
+
+```
+log(OR_CC) = beta_unscaled / (p_CC × (1 − p_CC))
+OR_CC = exp(log(OR_CC))
+```
+
+and the corresponding log-odds effect `log(OR_CC)` was retained as the back-computed beta.
+
+This procedure was applied to the OLS CC-GWAS effect estimates for comparison with the replication DCM-HCM GWAS.
+
+Standard errors on the back-computed scale were approximated from the corresponding two-sided p-values:
+
+```
+Z = Φ⁻¹(1 − p / 2)
+SE_backcomputed = |beta_backcomputed| / Z
+```
+
+
+Because this transformation reconstructs a direct case–case log-odds ratio from summary-level CC-GWAS quantities rather than fitting a direct logistic regression model, the resulting estimates should be interpreted as approximate.
+
+Implementation: [`code/ccgwas_backcomputation.R`](code/ccgwas_backcomputation.R)
+
+Discovery (CC-GWAS, back-computed) vs. validation (independent DCM-vs-HCM replication GWAS) effect sizes were then compared at the top CC-GWAS loci (Supplementary Figure 11) and at the novel lead SNPs (Supplementary Figure 12): [`code/beta_disc_calc.R`](code/beta_disc_calc.R)
+
+Scatterplots showing concordance of novel SNP effect estimates between discovery and validation (Supplementary Figure 11):
+![Supplementary_figure_11](figures/Supplementary_figure_11.png)
+
+Forest plots showing effect estimates for novel lead SNPs in discovery and validation (Supplementary Figure 11):
+![Supplementary_figure_12](figures/Supplementary_figure_12.png)
+
 ## Step 5 – Locus definitions, variant annotation and gene prioritization
 
 ### 5.1 Gene prioritization
@@ -744,12 +805,12 @@ python "${LDSC_DIR}/ldsc.py" \
 
 To evaluate the translational potential of the prioritized effector genes, we performed a comprehensive druggability assessment by integrating two complementary resources:
 
-1. **Open Targets Platform (queried April 2026)** — therapeutic tractability categories. Accessed through https://api.platform.opentargets.org/api/v4/graphql/browser. [Query example](code/open_targets_query_march_2026.txt)
+1. **Open Targets Platform (queried April 2026)** — therapeutic tractability categories. Accessed through https://api.platform.opentargets.org/api/v4/graphql/browser. [Query example](code/open_targets_query_april_2026.txt)
 2. **DrugnomeAI** — quantitative machine-learning predictions of druggability  
    - Raies et al., *Commun Biol* 5, 1291 (2022)  
    - https://astrazeneca-cgr-publications.github.io/DrugnomeAI/about.html
 
-In total, **129 prioritized genes** across **113 loci** (from DCM GWAS, HCM GWAS, CC-GWAS/MTAG, and the shared-effects meta-analysis) were analyzed (ST13 Druggability of all prioritized genes, Extended Data Fig. 9a,b).
+In total, **129 prioritized genes** across **114 loci** (113 from DCM GWAS, HCM GWAS, CC-GWAS/MTAG, and one from the shared-effects meta-analysis) were analyzed (ST13 Druggability of all prioritized genes, Extended Data Fig. 9a,b).
 
 Cell-type Expression of Druggable Prioritized Genes: Extended Data Fig. 8, Supplementary Fig. 10a–b  [`cell_type_specific_expr_fig.r`](cell_type_specific_expr_fig.r)
 
